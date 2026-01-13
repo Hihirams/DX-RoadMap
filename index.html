@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RoadMap DX - Training Progress Tracker">
+    <title>RoadMap DX</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar glass">
+        <div class="nav-brand">
+            <h1>RoadMap DX</h1>
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-view="map">
+                Progress Map
+            </button>
+            <button class="nav-tab" data-view="dashboard">
+                Dashboard
+            </button>
+            <button class="nav-tab admin-tab" data-view="admin">
+                Admin
+            </button>
+        </div>
+    </nav>
+
+    <!-- Map View -->
+    <main id="map-view" class="view active">
+        <div class="map-container" id="map-container">
+            <img src="Background.png" alt="Production Line Map" class="map-background" id="map-bg">
+
+            <!-- This overlay will be dynamically sized to match the displayed image area -->
+            <div id="image-overlay">
+                <!-- Checkpoints will be rendered here by JS -->
+                <div id="checkpoints-container"></div>
+
+                <!-- Characters will be rendered here by JS -->
+                <div id="characters-container"></div>
+            </div>
+        </div>
+
+        <!-- Character Info Tooltip -->
+        <div id="character-tooltip" class="tooltip glass hidden">
+            <img src="" alt="" class="tooltip-avatar" id="tooltip-avatar">
+            <div class="tooltip-info">
+                <h3 id="tooltip-name"></h3>
+                <p id="tooltip-course"></p>
+                <div class="tooltip-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="tooltip-progress"></div>
+                    </div>
+                    <span id="tooltip-percent"></span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Dashboard View -->
+    <main id="dashboard-view" class="view">
+        <div class="dashboard-container">
+            <header class="dashboard-header glass">
+                <h2>Skills Dashboard</h2>
+                <p>Team training progress and skills overview</p>
+            </header>
+
+            <!-- Team Overview Stats -->
+            <section class="stats-grid">
+                <div class="stat-card glass">
+                    <span class="stat-icon">01</span>
+                    <div class="stat-content">
+                        <span class="stat-value" id="total-members">5</span>
+                        <span class="stat-label">Members</span>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <span class="stat-icon">02</span>
+                    <div class="stat-content">
+                        <span class="stat-value" id="total-courses">6</span>
+                        <span class="stat-label">Courses</span>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <span class="stat-icon">03</span>
+                    <div class="stat-content">
+                        <span class="stat-value" id="completed-courses">0</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <span class="stat-icon">04</span>
+                    <div class="stat-content">
+                        <span class="stat-value" id="team-progress">0%</span>
+                        <span class="stat-label">Total Progress</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Character Cards -->
+            <section class="characters-section">
+                <h3 class="section-title">Individual Progress</h3>
+                <div class="characters-grid" id="dashboard-characters"></div>
+            </section>
+
+            <!-- Skills Matrix -->
+            <section class="skills-section glass">
+                <h3 class="section-title">Skills Matrix</h3>
+                <div class="skills-matrix" id="skills-matrix"></div>
+            </section>
+
+            <!-- Leaderboard -->
+            <section class="leaderboard-section glass">
+                <h3 class="section-title">Progress Ranking</h3>
+                <div class="leaderboard" id="leaderboard"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Admin View -->
+    <main id="admin-view" class="view">
+        <div class="admin-container">
+            <header class="admin-header glass">
+                <h2>Administration</h2>
+                <p>Certificate management and approvals</p>
+            </header>
+
+            <!-- Pending Approvals -->
+            <section class="pending-section">
+                <h3 class="section-title">Pending Certificates</h3>
+                <div class="pending-list" id="pending-approvals">
+                    <div class="empty-state glass">
+                        <span class="empty-icon">—</span>
+                        <p>No pending certificates</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Certificate for Character -->
+            <section class="upload-section glass">
+                <h3 class="section-title">Upload Certificate</h3>
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label for="select-character">Select Participant</label>
+                        <select id="select-character" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="select-course">Course to Certify</label>
+                        <select id="select-course" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="certificate-upload">Certificate Image</label>
+                        <div class="upload-area" id="upload-area">
+                            <input type="file" id="certificate-upload" accept="image/*" hidden>
+                            <span class="upload-icon">+</span>
+                            <p>Drag or click to upload</p>
+                            <img id="certificate-preview" class="certificate-preview hidden" alt="Preview">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="submit-certificate" disabled>
+                        Submit for Approval
+                    </button>
+                </div>
+            </section>
+
+            <!-- Approval History -->
+            <section class="history-section">
+                <h3 class="section-title">Approval History</h3>
+                <div class="history-list" id="approval-history"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Certificate Modal -->
+    <div id="certificate-modal" class="modal hidden">
+        <div class="modal-content glass">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div class="modal-header">
+                <img src="" alt="" class="modal-avatar" id="modal-avatar">
+                <div>
+                    <h3 id="modal-character-name"></h3>
+                    <p id="modal-course-name"></p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <img src="" alt="Certificate" class="modal-certificate" id="modal-certificate">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" id="approve-btn">
+                    Approve
+                </button>
+                <button class="btn btn-danger" id="reject-btn">
+                    Reject
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="admin.js"></script>
+</body>
+
+</html>

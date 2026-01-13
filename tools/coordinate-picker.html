@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinate Picker Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 80px);
+            overflow: hidden;
+            background: #e5e5ea;
+            margin-top: 80px;
+        }
+
+        .map-background {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+        }
+
+        /* Image overlay for markers - will be sized to match displayed image */
+        #image-overlay {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .marker {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #1d1d1f;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: white;
+            z-index: 10;
+        }
+
+        /* Click area overlay */
+        .click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            z-index: 5;
+        }
+
+        /* Nav bar */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-bar h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .coord-live {
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+            color: #1d1d1f;
+        }
+
+        .coord-live span {
+            font-family: monospace;
+            background: #f5f5f7;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        /* Info panel */
+        .info-panel {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            min-width: 260px;
+            max-width: 280px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .info-panel h2 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1d1d1f;
+        }
+
+        .points-list {
+            max-height: 280px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .point-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f5f5f7;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+        }
+
+        .point-num {
+            width: 20px;
+            height: 20px;
+            background: #1d1d1f;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .point-coords {
+            flex: 1;
+            font-family: monospace;
+            color: #1d1d1f;
+        }
+
+        .point-delete {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            color: #86868b;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .point-delete:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #1d1d1f;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #1d1d1f;
+            color: white;
+            margin-bottom: 6px;
+        }
+
+        .btn-primary:hover {
+            background: #3a3a3c;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #86868b;
+            border: 1px solid #e5e5ea;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .output {
+            margin-top: 12px;
+            padding: 10px;
+            background: #1d1d1f;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.65rem;
+            color: #a1a1a6;
+            max-height: 150px;
+            overflow: auto;
+            display: none;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .output.visible {
+            display: block;
+        }
+
+        .instructions {
+            font-size: 0.7rem;
+            color: #86868b;
+            line-height: 1.4;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e5e5ea;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: #aeaeb2;
+            padding: 16px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav-bar">
+        <h1>Coordinate Picker Tool</h1>
+        <div class="coord-live">
+            <span>X: <strong id="liveX">--</strong></span>
+            <span>Y: <strong id="liveY">--</strong></span>
+        </div>
+    </nav>
+
+    <div class="map-container" id="mapContainer">
+        <img src="../Background.png" alt="Map" class="map-background" id="mapImage">
+        <div id="image-overlay"></div>
+        <div class="click-overlay" id="clickOverlay"></div>
+    </div>
+
+    <div class="info-panel">
+        <h2>Saved Points</h2>
+        <div class="points-list" id="pointsList">
+            <div class="empty-msg">Click on the map to add points</div>
+        </div>
+
+        <button class="btn btn-primary" id="copyBtn">Copy as JavaScript</button>
+        <button class="btn btn-secondary" id="clearBtn">Clear All</button>
+
+        <pre class="output" id="output"></pre>
+
+        <div class="instructions">
+            <strong>How to use:</strong><br>
+            1. Click on map where you want each checkpoint<br>
+            2. Points are numbered in order (0 = Start)<br>
+            3. Click "Copy as JavaScript"<br>
+            4. Paste into data.js replacing CHECKPOINTS
+        </div>
+    </div>
+
+    <script>
+        const mapContainer = document.getElementById('mapContainer');
+        const mapImage = document.getElementById('mapImage');
+        const clickOverlay = document.getElementById('clickOverlay');
+        const imageOverlay = document.getElementById('image-overlay');
+        const liveX = document.getElementById('liveX');
+        const liveY = document.getElementById('liveY');
+        const pointsList = document.getElementById('pointsList');
+        const copyBtn = document.getElementById('copyBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const output = document.getElementById('output');
+
+        let points = [];
+
+        // Get image display info (how object-fit: contain positions the image)
+        function getImageDisplayInfo() {
+            const containerRect = mapContainer.getBoundingClientRect();
+            const containerW = containerRect.width;
+            const containerH = containerRect.height;
+
+            const imgNaturalW = mapImage.naturalWidth;
+            const imgNaturalH = mapImage.naturalHeight;
+
+            const imgAspect = imgNaturalW / imgNaturalH;
+            const containerAspect = containerW / containerH;
+
+            let displayedW, displayedH, offsetX, offsetY;
+
+            if (imgAspect > containerAspect) {
+                displayedW = containerW;
+                displayedH = containerW / imgAspect;
+                offsetX = 0;
+                offsetY = (containerH - displayedH) / 2;
+            } else {
+                displayedH = containerH;
+                displayedW = containerH * imgAspect;
+                offsetX = (containerW - displayedW) / 2;
+                offsetY = 0;
+            }
+
+            return { displayedW, displayedH, offsetX, offsetY, containerRect };
+        }
+
+        // Update overlay position to match image
+        function updateOverlay() {
+            const info = getImageDisplayInfo();
+            imageOverlay.style.left = info.offsetX + 'px';
+            imageOverlay.style.top = info.offsetY + 'px';
+            imageOverlay.style.width = info.displayedW + 'px';
+            imageOverlay.style.height = info.displayedH + 'px';
+        }
+
+        // Calculate percentage position within image
+        function getPercentagePosition(e) {
+            const info = getImageDisplayInfo();
+
+            const mouseX = e.clientX - info.containerRect.left;
+            const mouseY = e.clientY - info.containerRect.top;
+
+            const relX = mouseX - info.offsetX;
+            const relY = mouseY - info.offsetY;
+
+            const percentX = (relX / info.displayedW) * 100;
+            const percentY = (relY / info.displayedH) * 100;
+
+            return {
+                x: Math.round(percentX),
+                y: Math.round(percentY),
+                valid: percentX >= 0 && percentX <= 100 && percentY >= 0 && percentY <= 100
+            };
+        }
+
+        // Update live coordinates
+        clickOverlay.addEventListener('mousemove', (e) => {
+            const pos = getPercentagePosition(e);
+            if (pos.valid) {
+                liveX.textContent = pos.x + '%';
+                liveY.textContent = pos.y + '%';
+            } else {
+                liveX.textContent = '--';
+                liveY.textContent = '--';
+            }
+        });
+
+        // Add point on click
+        clickOverlay.addEventListener('click', (e) => {
+            const pos = getPercentagePosition(e);
+            if (pos.valid) {
+                points.push({ x: pos.x, y: pos.y });
+                renderPoints();
+                renderMarkers();
+            }
+        });
+
+        function renderPoints() {
+            if (points.length === 0) {
+                pointsList.innerHTML = '<div class="empty-msg">Click on the map to add points</div>';
+                return;
+            }
+
+            pointsList.innerHTML = points.map((p, i) => `
+                <div class="point-item">
+                    <div class="point-num">${i}</div>
+                    <div class="point-coords">x: ${p.x}, y: ${p.y}</div>
+                    <button class="point-delete" onclick="deletePoint(${i})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function renderMarkers() {
+            updateOverlay();
+            imageOverlay.innerHTML = '';
+
+            points.forEach((p, i) => {
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                // Position as percentage of the overlay (which matches the displayed image)
+                marker.style.left = p.x + '%';
+                marker.style.top = p.y + '%';
+                marker.textContent = i;
+                imageOverlay.appendChild(marker);
+            });
+        }
+
+        function deletePoint(index) {
+            points.splice(index, 1);
+            renderPoints();
+            renderMarkers();
+        }
+
+        clearBtn.addEventListener('click', () => {
+            points = [];
+            renderPoints();
+            renderMarkers();
+            output.classList.remove('visible');
+        });
+
+        copyBtn.addEventListener('click', () => {
+            const courseNames = [
+                'Start',
+                'Onboarding Basics',
+                'Safety Training',
+                'Quality Control',
+                'Equipment Operation',
+                'Process Optimization',
+                'Advanced Manufacturing'
+            ];
+
+            const code = points.map((p, i) => {
+                const name = courseNames[i] || `Course ${i}`;
+                const course = i === 0 ? 'null' : `"${name}"`;
+                const label = i === 0 ? 'S' : i.toString();
+                return `    {
+        id: ${i},
+        name: "${name}",
+        course: ${course},
+        x: ${p.x},
+        y: ${p.y},
+        label: "${label}"
+    }`;
+            }).join(',\n');
+
+            const fullCode = `const CHECKPOINTS = [\n${code}\n];`;
+
+            navigator.clipboard.writeText(fullCode).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy as JavaScript';
+                }, 2000);
+            });
+
+            output.textContent = fullCode;
+            output.classList.add('visible');
+        });
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            renderMarkers();
+        });
+
+        // Initialize when image loads
+        mapImage.addEventListener('load', () => {
+            updateOverlay();
+        });
+
+        if (mapImage.complete) {
+            updateOverlay();
+        }
+
+        window.deletePoint = deletePoint;
+    </script>
+</body>
+
+</html>
